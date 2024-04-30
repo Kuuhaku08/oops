@@ -1,5 +1,6 @@
 package com.example.socialmediaplatform.Controller;
 
+import com.example.socialmediaplatform.Entity.Comment;
 import com.example.socialmediaplatform.Entity.Post;
 import com.example.socialmediaplatform.Entity.Users;
 import com.example.socialmediaplatform.Repo.CommentRepo;
@@ -8,9 +9,7 @@ import com.example.socialmediaplatform.Repo.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping
@@ -32,22 +31,45 @@ public class PostController {
         Optional<Users> userObj= userRepo.findById(post.getUserID());
         if(userObj.isPresent()) {
             postRepo.save(post);
-            return ("Post created successful");
+            return ("Post created successfully");
         }
         else{
-            Map<String, Object> obj=new HashMap<>();
+            Map<String, Object> obj=new LinkedHashMap<>();
             obj.put("Error","User does not exist");
             return obj;
         }
     }
 
     @GetMapping("/post")
-    public Object getPost(Integer postID) {
+    public Object getPost(@RequestParam int postID) {
         Optional<Post> postObj= postRepo.findById(postID);
-        Map<String, Object> obj=new HashMap<>();
+
+        Map<String, Object> obj=new LinkedHashMap<>();
+
         if(postObj.isPresent()) {
-            obj.put("postID",postID);
+            obj.put("postID",postObj.get().getPostID());
             obj.put("postBody",postObj.get().getPostBody());
+            obj.put("date",postObj.get().getDate());
+
+            Set<Object> comments=new LinkedHashSet<>();
+
+            for(Integer comment:postObj.get().getCommentList()){
+
+                Map<String, Object> commentD=new LinkedHashMap<>();
+                commentD.put("commentID",comment);
+                commentD.put("commentBody",commentRepo.findById(comment).get().getCommentBody());
+
+                Map<String, Object> userD=new LinkedHashMap<>();
+                userD.put("userID",commentRepo.findById(comment).get().getUserID());
+                userD.put("name",userRepo.findById(commentRepo.findById(comment).get().getUserID()).get().getName());
+
+                commentD.put("commentCreator",userD);
+
+                comments.add(commentD);
+
+            }
+
+            obj.put("comments",comments);
         }
         else{
             obj.put("Error","Post does not exist");
@@ -81,5 +103,4 @@ public class PostController {
         obj.put("Error","Post does not exist");
         return obj;
     }
-
 }

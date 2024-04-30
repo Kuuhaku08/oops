@@ -11,9 +11,10 @@ import lombok.*;
 @AllArgsConstructor
 @ToString
 public class Comment {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private int commentID;
+    private Integer commentID;
 
     private String commentBody;
 

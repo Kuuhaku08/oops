@@ -1,6 +1,5 @@
 package com.example.socialmediaplatform.Controller;
 
-
 import com.example.socialmediaplatform.Entity.Comment;
 import com.example.socialmediaplatform.Entity.Post;
 import com.example.socialmediaplatform.Entity.Users;
@@ -23,7 +22,6 @@ public class UserController {
 
     @Autowired
     private CommentRepo commentRepo;
-
 
     //Endpoints related to Users
 
@@ -81,7 +79,7 @@ public class UserController {
 
         List<Map<String,Object>> list=new ArrayList<>();
         for (Users users : usersList) {
-            Map<String, Object> map = new HashMap<>();
+            Map<String, Object> map = new LinkedHashMap<>();
             map.put("name", users.getName());
             map.put("userID", users.getUserID());
             map.put("email", users.getEmail());
@@ -91,18 +89,41 @@ public class UserController {
         return list;
     }
 
-//    @GetMapping("/")
-//    public List<Map<String,Object>> home() {
-//        List<Post> postList=postRepo.findAll();
-//
-//        List<Map<String,Object>> list=new ArrayList<>();
-//        for (Post post : postList) {
-//            Map<String, Object> map = new HashMap<>();
-//            map.put("postID", post.getPostID());
-//            map.put("postBody", post.getPostBody());
-//            map.put("email", users.getEmail());
-//            list.add(map);
-//        }
-//    }
+    @GetMapping("/")
+    public List<Map<String,Object>> feed() {
+        List<Post> postList=new ArrayList<>();
+        postRepo.findAll().forEach(postList::add);
+        postList.sort(Comparator.comparing(Post::getDate));
+        Collections.reverse(postList);
 
+        List<Map<String,Object>> list=new ArrayList<>();
+        for (Post post : postList) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("postID", post.getPostID());
+            map.put("postBody", post.getPostBody());
+            map.put("date", post.getDate());
+
+            Set<Object> comments=new HashSet<>();
+
+            for(Integer comment:post.getCommentList()){
+
+                Map<String, Object> commentD=new LinkedHashMap<>();
+                commentD.put("commentID",comment);
+                commentD.put("commentBody",commentRepo.findById(comment).get().getCommentBody());
+
+                Map<String, Object> userD=new LinkedHashMap<>();
+                userD.put("userID",commentRepo.findById(comment).get().getUserID());
+                userD.put("name",userRepo.findById(commentRepo.findById(comment).get().getUserID()).get().getName());
+
+                commentD.put("commentCreator",userD);
+
+                comments.add(commentD);
+
+            }
+            map.put("comments",comments);
+            list.add(map);
+        }
+
+        return list;
+    }
 }

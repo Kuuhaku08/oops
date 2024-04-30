@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -31,11 +32,17 @@ public class CommentController {
     public Object comment(@RequestBody Comment comment) {
         Map<String, Object> obj=new HashMap<>();
         Optional<Users> userObj=userRepo.findById(comment.getUserID());
+
         if(userObj.isPresent()) {
             Optional<Post> postObj=postRepo.findById(comment.getPostID());
+
             if(postObj.isPresent()) {
-                commentRepo.save(comment);
-                postObj.get().getCommentList().add(comment.getCommentID());
+
+                Comment commentObj=commentRepo.save(comment);
+                Post updatedPost=postObj.get();
+                updatedPost.getCommentList().add(commentObj.getCommentID());
+                postRepo.save(updatedPost);
+
                 return ("Comment created successfully");
             }
             else {
@@ -51,11 +58,11 @@ public class CommentController {
     @GetMapping("/comment")
     public Object getComment(Integer commentID) {
         Optional<Comment> commentObj= commentRepo.findById(commentID);
-        Map<String, Object> obj=new HashMap<>();
+        Map<String, Object> obj=new LinkedHashMap<>();
         if(commentObj.isPresent()) {
             obj.put("commentID",commentObj.get().getCommentID());
             obj.put("commentBody",commentObj.get().getCommentBody());
-            Map<String,Object> map=new HashMap<>();
+            Map<String,Object> map=new LinkedHashMap<>();
             map.put("userID",commentObj.get().getUserID());
             map.put("name",userRepo.findById(commentObj.get().getUserID()).get().getName());
             obj.put("commentCreator",map);
@@ -84,6 +91,11 @@ public class CommentController {
     public Object deleteComment(Integer commentID) {
         Optional<Comment> commentObj= commentRepo.findById(commentID);
         if(commentObj.isPresent()) {
+            Post postObj=postRepo.findById(commentObj.get().getPostID()).get();
+            Post updatedPost=postObj;
+            updatedPost.getCommentList().remove(commentID);
+            postRepo.save(updatedPost);
+
             commentRepo.delete(commentObj.get());
             return ("Comment deleted");
         }
@@ -93,5 +105,4 @@ public class CommentController {
             return obj;
         }
     }
-
 }
